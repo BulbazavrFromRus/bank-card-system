@@ -1,8 +1,7 @@
 databaseChangeLog:
-  - changeSet:
-      id: initial
-      author: your-name
-      changes:
-        - sql:
-            comment: Initial empty changeset to allow Liquibase to start
-            sql: SELECT 1
+  - include:
+      file: db/migration/V1.0.1__create_users_table.yaml
+  - include:
+      file: db/migration/V1.0.2__create_cards_table.yaml
+  - include:
+      file: db/migration/V1.0.3__create_transactions_table.yaml
