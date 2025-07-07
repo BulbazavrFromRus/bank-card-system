@@ -30,6 +30,10 @@ public class CardService {
         return cardRepository.findByUser(user, pageable).map(this::convertToDTO);
     }
 
+    public Page<CardDTO> getAllCards(Pageable pageable) {
+        return cardRepository.findAll(pageable).map(this::convertToDTO);
+    }
+
     public CardDTO createCard(String cardNumber, String holderName, LocalDate expiryDate, Long userId) {
         if (!isValidCardNumber(cardNumber)) {
             throw new IllegalArgumentException("Invalid card number");
@@ -54,6 +58,58 @@ public class CardService {
         return convertToDTO(savedCard);
     }
 
+    public CardDTO requestBlockCard(Long cardId) {
+        String username = ((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card not found"));
+
+        if (!card.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Card does not belong to user");
+        }
+        if (card.getStatus() != Card.Status.ACTIVE) {
+            throw new RuntimeException("Card is not active");
+        }
+
+        card.setStatus(Card.Status.BLOCKED);
+        Card updatedCard = cardRepository.save(card);
+        return convertToDTO(updatedCard);
+    }
+
+    public CardDTO blockCard(Long cardId) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card not found"));
+
+        if (card.getStatus() != Card.Status.ACTIVE) {
+            throw new RuntimeException("Card is not active");
+        }
+
+        card.setStatus(Card.Status.BLOCKED);
+        Card updatedCard = cardRepository.save(card);
+        return convertToDTO(updatedCard);
+    }
+
+    public CardDTO activateCard(Long cardId) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card not found"));
+
+        if (card.getStatus() != Card.Status.BLOCKED) {
+            throw new RuntimeException("Card is not blocked");
+        }
+
+        card.setStatus(Card.Status.ACTIVE);
+        Card updatedCard = cardRepository.save(card);
+        return convertToDTO(updatedCard);
+    }
+
+    public void deleteCard(Long cardId) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card not found"));
+        cardRepository.delete(card);
+    }
+
     private CardDTO convertToDTO(Card card) {
         CardDTO dto = new CardDTO();
         dto.setId(card.getId());
@@ -74,9 +130,5 @@ public class CardService {
 
     private boolean isValidCardNumber(String cardNumber) {
         return cardNumber != null && cardNumber.matches("\\d{16}");
-    }
-
-    public Page<CardDTO> getAllCards(Pageable pageable) {
-        return cardRepository.findAll(pageable).map(this::convertToDTO);
     }
 }

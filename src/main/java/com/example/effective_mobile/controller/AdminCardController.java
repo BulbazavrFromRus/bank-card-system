@@ -17,7 +17,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -58,6 +57,45 @@ public class AdminCardController {
                 cardRequest.getUserId()
         );
         return ResponseEntity.ok(card);
+    }
+
+    @PutMapping("/cards/{id}/block")
+    @Operation(summary = "Block a card", description = "Blocks a card by ID (admin only)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Card blocked"),
+            @ApiResponse(responseCode = "400", description = "Card is not active"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Card not found")
+    })
+    public ResponseEntity<CardDTO> blockCard(@PathVariable Long id) {
+        return ResponseEntity.ok(cardService.blockCard(id));
+    }
+
+    @PutMapping("/cards/{id}/activate")
+    @Operation(summary = "Activate a card", description = "Activates a blocked card by ID (admin only)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Card activated"),
+            @ApiResponse(responseCode = "400", description = "Card is not blocked"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Card not found")
+    })
+    public ResponseEntity<CardDTO> activateCard(@PathVariable Long id) {
+        return ResponseEntity.ok(cardService.activateCard(id));
+    }
+
+    @DeleteMapping("/cards/{id}")
+    @Operation(summary = "Delete a card", description = "Deletes a card by ID (admin only)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Card deleted"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Card not found")
+    })
+    public ResponseEntity<Void> deleteCard(@PathVariable Long id) {
+        cardService.deleteCard(id);
+        return ResponseEntity.noContent().build();
     }
 
     @Data

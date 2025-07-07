@@ -34,4 +34,17 @@ public class UserCardController {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(cardService.getUserCards(pageable));
     }
+
+    @PostMapping("/cards/{id}/block")
+    @Operation(summary = "Request card block", description = "Requests to block a card owned by the authenticated user")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Card blocked"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Card does not belong to user"),
+            @ApiResponse(responseCode = "404", description = "Card not found"),
+            @ApiResponse(responseCode = "400", description = "Card is not active")
+    })
+    public ResponseEntity<CardDTO> requestBlockCard(@PathVariable Long id) {
+        return ResponseEntity.ok(cardService.requestBlockCard(id));
+    }
 }
