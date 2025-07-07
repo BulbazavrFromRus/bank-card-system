@@ -11,7 +11,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Service
@@ -108,6 +110,39 @@ public class CardService {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card not found"));
         cardRepository.delete(card);
+    }
+
+    @Transactional
+    public CardDTO transfer(Long fromCardId, Long toCardId, BigDecimal amount) {
+        String username = ((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Card fromCard = cardRepository.findById(fromCardId)
+                .orElseThrow(() -> new RuntimeException("Source card not found"));
+        Card toCard = cardRepository.findById(toCardId)
+                .orElseThrow(() -> new RuntimeException("Destination card not found"));
+
+        if (!fromCard.getUser().getId().equals(user.getId()) || !toCard.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Both cards must belong to the user");
+        }
+        if (fromCard.getStatus() != Card.Status.ACTIVE || toCard.getStatus() != Card.Status.ACTIVE) {
+            throw new RuntimeException("Both cards must be active");
+        }
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("Amount must be positive");
+        }
+        if (fromCard.getBalance().compareTo(amount) < 0) {
+            throw new RuntimeException("Insufficient balance");
+        }
+
+        fromCard.setBalance(fromCard.getBalance().subtract(amount));
+        toCard.setBalance(toCard.getBalance().add(amount));
+
+        cardRepository.save(fromCard);
+        cardRepository.save(toCard);
+
+        return convertToDTO(fromCard);
     }
 
     private CardDTO convertToDTO(Card card) {
