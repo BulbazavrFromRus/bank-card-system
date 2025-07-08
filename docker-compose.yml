@@ -1,15 +1,33 @@
 version: '3.8'
+
 services:
-  db:
-    image: postgres:14
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
     environment:
-      POSTGRES_DB: bankdb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/bankdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_LIQUIBASE_CHANGE_LOG=classpath:db/migration/changelog-master.yaml
+    networks:
+      - app-network
+
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=bankdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
 
-volumes:
-  postgres_data:
+networks:
+  app-network:
+    driver: bridge
